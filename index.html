@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Chatly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── LOADER ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    #loader {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #0b141a;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-family: 'Outfit', Arial, sans-serif;
+      gap: 0;
+      transition: opacity 0.4s ease;
+    }
+    #loader.fade-out { opacity: 0; pointer-events: none; }
+
+    #loader-logo {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg, #00a884, #007a62);
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 900; color: #fff;
+      margin-bottom: 16px;
+      box-shadow: 0 0 30px rgba(0,168,132,0.4);
+    }
+    #loader-title {
+      font-size: 28px; font-weight: 700; color: #e9edef;
+      margin-bottom: 6px; letter-spacing: -0.5px;
+    }
+    #loader-sub {
+      font-size: 13px; color: #8696a0;
+      margin-bottom: 40px;
+    }
+    #loader-bar-wrap {
+      width: min(280px, 75vw);
+      background: rgba(255,255,255,0.07);
+      border-radius: 99px; height: 4px;
+      overflow: hidden; margin-bottom: 14px;
+    }
+    #loader-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #00a884, #25d366);
+      border-radius: 99px;
+      transition: width 0.2s ease;
+    }
+    #loader-file {
+      font-size: 11px; color: rgba(255,255,255,0.25);
+      font-family: monospace; height: 16px;
+    }
+
+    /* ── ERRO ────────────────────────────────────── */
+    #error-overlay {
+      display: none; position: fixed; inset: 0; z-index: 10000;
+      background: #0b141a;
+      align-items: center; justify-content: center;
+      flex-direction: column; padding: 24px;
+      font-family: 'Outfit', Arial, sans-serif;
+    }
+    #error-overlay.show { display: flex; }
+    #error-icon  { font-size: 44px; margin-bottom: 14px; }
+    #error-title { font-size: 18px; font-weight: 700; color: #ff5252; margin-bottom: 6px; }
+    #error-file  { font-size: 12px; color: #8696a0; font-family: monospace; margin-bottom: 16px; word-break: break-all; text-align: center; }
+    #error-box   { background: rgba(255,82,82,0.08); border: 1px solid rgba(255,82,82,0.2); border-radius: 12px; padding: 14px 18px; font-size: 12px; color: #ccc; font-family: monospace; white-space: pre-wrap; max-width: 420px; width: 100%; }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════ LOADER ══════════════════════ -->
+  <div id="loader">
+    <div id="loader-logo">C</div>
+    <div id="loader-title">Chatly</div>
+    <div id="loader-sub">Carregando...</div>
+    <div id="loader-bar-wrap">
+      <div id="loader-bar"></div>
+    </div>
+    <div id="loader-file"></div>
+  </div>
+
+  <!-- ══════════════════════ ERRO ══════════════════════ -->
+  <div id="error-overlay">
+    <div id="error-icon">⚠️</div>
+    <div id="error-title">Falha ao carregar</div>
+    <div id="error-file"></div>
+    <div id="error-box"></div>
+  </div>
+
+  <!-- ══════════════════════ PROFILE SETUP MODAL ══════════════════════ -->
+  <div id="setup-overlay" class="overlay">
+    <div class="setup-modal">
+      <div class="setup-logo">
+        <div class="logo-mark">C</div>
+        <h1>Chatly</h1>
+        <p>Configure seu perfil antes de começar</p>
+      </div>
+
+      <div class="avatar-upload-zone" id="avatar-upload-zone">
+        <div class="avatar-preview" id="avatar-preview">
+          <span class="avatar-icon">👤</span>
+          <div class="avatar-overlay">
+            <span>📷</span>
+          </div>
+        </div>
+        <input type="file" id="avatar-input" accept="image/*" hidden>
+        <small>Toque para adicionar foto</small>
+      </div>
+
+      <div class="setup-fields">
+        <div class="field-group">
+          <label for="setup-name">Nome de exibição</label>
+          <input type="text" id="setup-name" placeholder="Como quer ser chamado?" maxlength="50" autocomplete="off">
+        </div>
+
+        <div class="field-group">
+          <label for="setup-username">Nome de usuário</label>
+          <div class="username-wrap">
+            <span class="at-sign">@</span>
+            <input type="text" id="setup-username" placeholder="seunome123" maxlength="25" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="field-hint">
+            <span id="username-check-icon">○</span>
+            <span id="username-check-msg">Máx. 25 caracteres · Pode ser trocado a cada 24h</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="setup-desc">Descrição <span class="optional">(opcional)</span></label>
+          <textarea id="setup-desc" placeholder="Conte um pouco sobre você..." maxlength="150" rows="3"></textarea>
+          <span class="char-counter" id="desc-counter">0 / 150</span>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="setup-submit" disabled>Entrar no Chatly →</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ MEDIA VIEWER MODAL ══════════════════════ -->
+  <div id="media-modal" class="overlay hidden">
+    <div class="media-backdrop" id="media-backdrop"></div>
+    <div class="media-modal-inner">
+      <button class="media-close" id="media-close">✕</button>
+      <div id="media-content-area"></div>
+      <div class="media-modal-footer">
+        <span id="media-sender-info"></span>
+        <a id="media-download-btn" class="media-dl-btn" download>⬇ Baixar</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ NEW CHAT MODAL ══════════════════════ -->
+  <div id="new-chat-overlay" class="overlay hidden">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <button class="icon-btn" id="close-new-chat">←</button>
+        <h3>Nova Conversa</h3>
+      </div>
+      <div class="dialog-search">
+        <input type="text" id="user-search-input" placeholder="🔍 Buscar @usuário..." autocomplete="off" spellcheck="false">
+      </div>
+      <div id="user-search-results" class="user-results">
+        <div class="search-hint">Digite um @username para buscar</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ TOAST ══════════════════════ -->
+  <div id="toast-container"></div>
+
+  <!-- ══════════════════════ MAIN APP ══════════════════════ -->
+  <div id="app" class="app hidden">
+
+    <!-- ─── SIDEBAR ─── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <button class="avatar-btn" id="my-profile-btn">
+          <div class="mini-avatar" id="my-mini-avatar">
+            <img id="my-avatar-img" src="" alt="" hidden>
+            <span id="my-avatar-letter">?</span>
+          </div>
+        </button>
+        <span class="sidebar-title">Chatly</span>
+        <div class="sidebar-actions">
+          <button class="icon-btn" id="new-chat-btn" title="Nova conversa">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/>
+              <path d="M11 11h2v2h-2zm0-4h2v3h-2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="sidebar-search">
+        <input type="text" id="chat-search" placeholder="🔍 Buscar conversa...">
+      </div>
+
+      <div class="chats-list" id="chats-list">
+        <div class="empty-state-sidebar">
+          <span>💬</span>
+          <p>Sem conversas ainda</p>
+          <small>Clique no ícone acima para começar</small>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ─── PROFILE PANEL ─── -->
+    <div class="profile-panel" id="profile-panel" aria-hidden="true">
+      <div class="panel-header">
+        <button class="icon-btn" id="profile-panel-back">←</button>
+        <h3>Perfil</h3>
+      </div>
+      <div class="profile-avatar-section">
+        <div class="big-avatar" id="big-avatar">
+          <img id="big-avatar-img" src="" alt="" hidden>
+          <span id="big-avatar-letter">?</span>
+          <button class="change-photo-btn" id="change-photo-btn">📷</button>
+          <input type="file" id="change-photo-input" accept="image/*" hidden>
+        </div>
+      </div>
+      <div class="profile-fields">
+        <div class="profile-field-row">
+          <div>
+            <label class="field-label">Nome</label>
+            <div class="field-value" id="pf-name"></div>
+          </div>
+          <button class="edit-field-btn" data-field="name">✏️</button>
+        </div>
+        <div class="profile-field-row">
+          <div>
+            <label class="field-label">Usuário</label>
+            <div class="field-value" id="pf-username"></div>
+          </div>
+          <button class="edit-field-btn" data-field="username" id="edit-username-btn">✏️</button>
+        </div>
+        <div class="profile-field-row">
+          <div>
+            <label class="field-label">Descrição</label>
+            <div class="field-value" id="pf-desc"></div>
+          </div>
+          <button class="edit-field-btn" data-field="description">✏️</button>
+        </div>
+        <div id="username-cooldown-notice" class="cooldown-notice hidden"></div>
+      </div>
+    </div>
+
+    <!-- ─── CHAT AREA ─── -->
+    <main class="chat-area" id="chat-area">
+      <div class="welcome-screen" id="welcome-screen">
+        <div class="welcome-inner">
+          <div class="welcome-logo">C</div>
+          <h2>Chatly</h2>
+          <p>Selecione uma conversa ou inicie uma nova</p>
+        </div>
+      </div>
+
+      <div class="conversation" id="conversation" aria-hidden="true">
+        <div class="chat-topbar">
+          <button class="icon-btn back-btn" id="back-to-sidebar">←</button>
+          <div class="contact-mini-avatar" id="contact-mini-avatar">
+            <img id="contact-avatar-img" src="" alt="" hidden>
+            <span id="contact-avatar-letter">?</span>
+          </div>
+          <div class="contact-meta">
+            <span class="contact-display-name" id="contact-display-name">—</span>
+            <span class="contact-username" id="contact-username">@—</span>
+          </div>
+        </div>
+
+        <div class="messages-scroll" id="messages-scroll">
+          <div class="messages-inner" id="messages-inner"></div>
+        </div>
+
+        <div class="input-zone" id="input-zone">
+          <div class="input-row" id="input-row">
+            <button class="icon-btn" id="attach-btn" title="Mídia">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/>
+              </svg>
+            </button>
+            <input type="file" id="file-input" accept="image/*,video/*,audio/*" hidden>
+
+            <div class="text-area-wrap">
+              <textarea id="msg-input" placeholder="Mensagem..." rows="1" maxlength="4096"></textarea>
+            </div>
+
+            <button class="icon-btn mic-btn" id="mic-btn" title="Áudio">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              </svg>
+            </button>
+            <button class="send-btn hidden" id="send-btn" title="Enviar">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="recording-row hidden" id="recording-row">
+            <button class="cancel-rec-btn" id="cancel-rec">✕</button>
+            <div class="rec-indicator">
+              <span class="rec-dot"></span>
+              <span id="rec-timer">0:00</span>
+            </div>
+            <canvas id="rec-viz" height="36"></canvas>
+            <button class="send-rec-btn" id="send-rec">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ══════════════════════ LOADER SCRIPT ══════════════════════ -->
+
+  <!-- Supabase SDK (único que pode vir direto do CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <script>
+  "use strict";
+
+  const _BASE = 'https://raw.githubusercontent.com/VggxYT-i-use-arch-btw/chatly/main/';
+
+  // CSS + JS em ordem de dependência
+  const _CSS     = 'css/app.css';
+  const _MODULES = [
+    'js/config.js',
+    'js/db.js',
+    'js/r2.js',
+    'js/audio.js',
+    'js/supabase-client.js',
+    'js/profile.js',
+    'js/chat.js',
+    'js/app.js',
+  ];
+  const _TOTAL = _MODULES.length;
+  let   _loaded = 0;
+
+  const _loaderEl = document.getElementById('loader');
+  const _barEl    = document.getElementById('loader-bar');
+  const _fileEl   = document.getElementById('loader-file');
+  const _errOver  = document.getElementById('error-overlay');
+  const _errFile  = document.getElementById('error-file');
+  const _errBox   = document.getElementById('error-box');
+
+  // Captura erros de execução nos módulos carregados
+  window.addEventListener('error', e => {
+    const src = e.filename || '';
+    if (!src.includes('blob:')) return;
+    _showError(src, `${e.message}\nLinha: ${e.lineno}  Coluna: ${e.colno}`);
+  });
+
+  function _updateProgress(filename) {
+    _loaded++;
+    _barEl.style.width = (_loaded / _TOTAL * 100) + '%';
+    _fileEl.textContent = filename.split('/').pop();
+  }
+
+  function _showError(url, msg) {
+    _loaderEl.style.display = 'none';
+    _errFile.textContent = url;
+    _errBox.textContent  = msg;
+    _errOver.classList.add('show');
+  }
+
+  function _done() {
+    _fileEl.textContent  = 'pronto!';
+    _barEl.style.width   = '100%';
+    setTimeout(() => {
+      _loaderEl.classList.add('fade-out');
+      setTimeout(() => { _loaderEl.style.display = 'none'; }, 420);
+    }, 200);
+  }
+
+  // Faz fetch de um arquivo e retorna { url, blob }
+  async function _fetchFile(path) {
+    const url = _BASE + path;
+    let res;
+    try {
+      res = await fetch(url);
+    } catch (e) {
+      _showError(url, `Erro de rede: ${e.message}\n\nVerifique sua conexão.`);
+      return null;
+    }
+    if (!res.ok) {
+      let detail = `HTTP ${res.status} ${res.statusText}\nURL: ${url}`;
+      if (res.status === 404) detail += '\n\nArquivo não encontrado no repositório.';
+      else if (res.status === 403) detail += '\n\nAcesso negado — repositório privado?';
+      _showError(url, detail);
+      return null;
+    }
+    const text = await res.text();
+    return { path, url, text };
+  }
+
+  // Injeta JS via Blob URL (resolve o problema de MIME do raw.githubusercontent.com)
+  function _execScript({ path, url, text }) {
+    return new Promise((resolve, reject) => {
+      const blob    = new Blob([text], { type: 'application/javascript' });
+      const blobURL = URL.createObjectURL(blob);
+      const script  = document.createElement('script');
+      script.src    = blobURL;
+      script.onload = () => {
+        URL.revokeObjectURL(blobURL);
+        _updateProgress(path);
+        resolve();
+      };
+      script.onerror = () => {
+        URL.revokeObjectURL(blobURL);
+        _showError(url, `Erro ao executar "${path.split('/').pop()}".\nVeja o console para detalhes.`);
+        reject();
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  // Injeta CSS via <style> (mesmo motivo — MIME)
+  function _injectCSS(text) {
+    const style = document.createElement('style');
+    style.textContent = text;
+    document.head.appendChild(style);
+  }
+
+  async function _loadAll() {
+    // Busca CSS e JS em paralelo
+    const cssPromise     = _fetchFile(_CSS);
+    const jsPromises     = _MODULES.map(f => _fetchFile(f));
+
+    // Injeta CSS assim que chegar
+    const cssResult = await cssPromise;
+    if (!cssResult) return;
+    _injectCSS(cssResult.text);
+
+    // Executa JS em ordem (downloads já foram em paralelo)
+    for (let i = 0; i < _TOTAL; i++) {
+      _fileEl.textContent = _MODULES[i].split('/').pop();
+      const mod = await jsPromises[i];
+      if (!mod) return;
+      try { await _execScript(mod); }
+      catch { return; }
+    }
+
+    _done();
+  }
+
+  _loadAll();
+  </script>
+
+</body>
+</html>
