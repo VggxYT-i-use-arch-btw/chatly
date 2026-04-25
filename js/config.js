@@ -6,8 +6,8 @@
 var CONFIG = {
   // ── SUPABASE ──────────────────────────────────────
   // Crie em https://supabase.com → New Project
-  SUPABASE_URL:      'https://SEU_PROJETO.supabase.co',
-  SUPABASE_ANON_KEY: 'SUA_ANON_KEY_AQUI',
+  SUPABASE_URL:      'https://tsprfsrfdjdzqhxsdftr.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable__MaECX0abEks7Ubtv4FzHg_4mFWNKY3',
 
   // ── CLOUDFLARE R2 ─────────────────────────────────
   // Deploy o worker em /worker/r2-worker.js primeiro
